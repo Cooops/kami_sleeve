@@ -1,17 +1,17 @@
 import { ethers } from 'ethers';
 
-const HarvestSystemABI = [
+const HarvestLiquidateSystemABI = [
     {
         "type": "function",
         "name": "executeTyped",
         "inputs": [
             {
-                "name": "kamiID",
+                "name": "harvestID",
                 "type": "uint256",
                 "internalType": "uint256"
             },
             {
-                "name": "nodeID",
+                "name": "kamiID",
                 "type": "uint256",
                 "internalType": "uint256"
             }
@@ -27,20 +27,19 @@ const HarvestSystemABI = [
     }
 ];
 
-export const startHarvesting = async (
+export const liquidateHarvest = async (
+    harvestID: string,
     kamiID: string,
-    nodeID: string,
     signer: ethers.Signer,
-    harvestAddr: string
+    liquidateAddr: string
 ): Promise<ethers.ContractReceipt> => {
-    const harvestContract = new ethers.Contract(harvestAddr, HarvestSystemABI, signer);
+    const liquidateContract = new ethers.Contract(liquidateAddr, HarvestLiquidateSystemABI, signer);
     
     // Add 0x prefix if not present
+    const formattedHarvestID = harvestID.startsWith('0x') ? harvestID : `0x${harvestID}`;
     const formattedKamiID = kamiID.startsWith('0x') ? kamiID : `0x${kamiID}`;
-    const formattedNodeID = nodeID.startsWith('0x') ? nodeID : `0x${nodeID}`;
     
-    console.log('kami/node id', formattedKamiID, formattedNodeID);
-    const tx = await harvestContract.executeTyped(formattedKamiID, formattedNodeID);
-    console.log('tx hash', tx.hash);
+    const tx = await liquidateContract.executeTyped(formattedHarvestID, formattedKamiID);
+    console.log('liquidate tx hash', tx.hash);
     return await tx.wait();
 }; 

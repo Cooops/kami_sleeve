@@ -1,8 +1,12 @@
 import { ethers } from 'ethers';
 import { getKamiInfo as _getKamiInfo } from './echoKamis.js';
 import { reviveKami } from './reviveKamis.js';
+import { feedKami } from './feedKami.js'
 import { moveToRoom } from './moveKamis.js';
 import { startHarvesting } from './harvestKamis.js';
+import { stopHarvesting } from './stopHarvestKamis.js';
+import { collectHarvest } from './collectHarvest.js';
+import { liquidateHarvest } from './liquidateHarvest.js';
 
 // import from abi file cleanly soon
 const WorldABI = [
@@ -87,7 +91,10 @@ export class KamiManager {
         GETTER: "system.getter",
         MOVE: "system.account.move",
         USE_ITEM: "system.kami.use.item",
-        HARVEST: "system.harvest.start",
+        HARVEST_START: "system.harvest.start",
+        HARVEST_STOP: "system.harvest.stop",
+        HARVEST_COLLECT: "system.harvest.collect",
+        HARVEST_LIQUIDATE: "system.harvest.liquidate",
     };
 
     constructor(
@@ -139,16 +146,36 @@ export class KamiManager {
         return await reviveKami(kamiInfo.id, this.signer, useItemAddr);
     }
 
+    async feedKami(kamiIndex: number, foodIndex: number): Promise<ethers.ContractReceipt> {
+        const useItemAddr = await this.getSystemAddress(this.SYSTEM_IDS.USE_ITEM);
+        const kamiInfo = await this.getKamiInfo(kamiIndex);
+        return await feedKami(kamiInfo.id, foodIndex, this.signer, useItemAddr);
+    }
+
     async getCurrentRoom(kamiIndex: number): Promise<number> {
         const kamiInfo = await this.getKamiInfo(kamiIndex);
         // get the room from the kamiInfo (hack until we can read more data
         return kamiInfo.room;
     }
 
-    async startHarvesting(kamiIndex: number, nodeID: number): Promise<ethers.ContractReceipt> {
-        const harvestAddr = await this.getSystemAddress(this.SYSTEM_IDS.HARVEST);
-        const kamiInfo = await this.getKamiInfo(kamiIndex);
-        return await startHarvesting(kamiInfo.id, nodeID, this.signer, harvestAddr);
+    async startHarvesting(kamiID: string, nodeID: string): Promise<ethers.ContractReceipt> {
+        const harvestAddr = await this.getSystemAddress(this.SYSTEM_IDS.HARVEST_START);
+        return await startHarvesting(kamiID, nodeID, this.signer, harvestAddr);
+    }
+
+    async stopHarvesting(kamiID: string): Promise<ethers.ContractReceipt> {
+        const harvestAddr = await this.getSystemAddress(this.SYSTEM_IDS.HARVEST_STOP);
+        return await stopHarvesting(kamiID, this.signer, harvestAddr);
+    }
+
+    async collectHarvest(harvestID: string): Promise<ethers.ContractReceipt> {
+        const collectAddr = await this.getSystemAddress(this.SYSTEM_IDS.HARVEST_COLLECT);
+        return await collectHarvest(harvestID, this.signer, collectAddr);
+    }
+
+    async liquidateHarvest(harvestID: string, kamiID: string): Promise<ethers.ContractReceipt> {
+        const liquidateAddr = await this.getSystemAddress(this.SYSTEM_IDS.HARVEST_LIQUIDATE);
+        return await liquidateHarvest(harvestID, kamiID, this.signer, liquidateAddr);
     }
 
     // private parseTransactionReceipt(receipt: ethers.ContractReceipt): any {
