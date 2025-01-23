@@ -132,20 +132,24 @@ async function testRunner() {
         const nodeID = "48e075902440c00b3be18427203d7d4865a6ef147e1424b144e22e0756107769"; // scrap paths
         const kamiHarvestID = "0x8b523040ac55508516879b497be69f4d84f051e137a89bc91e3edd0d41a4afda";
         const kamiSecondHarvestID = "0xd21d057c09ca8949c30a0334967bc2fc80ff620f6e1c472739a272c9a2f5c6f0"
-        const harvestDuration = 30000; // 30 seconds for testing
         
         // Run strategy with timeout
         const timeoutPromise = new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Strategy timeout')), 120000) // 2 minute timeout
+            setTimeout(() => reject(new Error('Strategy timeout')), 600000) // 10 minute timeout
         );
         
-        const strategyPromise = simpleHarvestStrategy(manager, 6717, kamiHarvestID, kamiSecondHarvestID, nodeID, harvestDuration);
+        const strategyPromise = simpleHarvestStrategy(manager, 6717, kamiHarvestID, kamiSecondHarvestID, nodeID, {
+            collectInterval: 90000, // 90 seconds between collections
+            maxCycles: 1,
+            cooldownWait: 60000,
+            initialCooldown: 60000
+        });
         
         try {
             await Promise.race([strategyPromise, timeoutPromise]);
         } catch (error: unknown) {
             if (error instanceof Error && error.message === 'Strategy timeout') {
-                console.log('✅ Strategy ran successfully for 2 minutes');
+                console.log('✅ Strategy timed out after 10 minutes as expected');
             } else {
                 throw error;
             }

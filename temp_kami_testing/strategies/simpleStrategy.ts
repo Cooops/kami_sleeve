@@ -4,82 +4,101 @@ import { KamiManager } from "../kamiManager.js";
 export async function simpleHarvestStrategy(
     manager: KamiManager,
     kamiIndex: number,
-    kamiHarvestID: string,
-    kamiSecondHarvestID: string,
-    nodeID: string,
-    harvestDuration: number, // in milliseconds
-    options = {
-        collectInterval: 0, // 0 means don't collect, just stop
-        maxCycles: 3, // number of harvest cycles before stopping
-        cooldownWait: 60000 // 1 minute cooldown wait
+    startHarvestID: string,     // ID used to start harvesting
+    harvestStateID: string,     // ID used for collecting/stopping harvest
+    nodeID: string,             // Resource node ID
+    // harvestDuration: number, // in milliseconds
+    options: {
+        collectInterval: number, // milliseconds between collections
+        maxCycles: number,
+        cooldownWait: number, // milliseconds to wait after cooldown error
+        initialCooldown: number // milliseconds to wait after placing
     }
 ) {
     let cycles = 0;
+    let didStartHarvest = false;
+    let stopAttempts = 0; // Moved outside try block
     
-    while (cycles < options.maxCycles) {
-        try {
-            // Get kami info to check state
-            const kamiInfo = await manager.getKamiInfo(kamiIndex);
+    try {
+        // Initial state check
+        const initialState = await manager.getKamiInfo(kamiIndex);
+        console.log(`Initial kami state: ${initialState.state}`);
+        
+        // Start harvesting if not already harvesting
+        if (initialState.state === "RESTING") {
+            console.log('Starting new harvest session...');
+            await manager.startHarvesting(startHarvestID, nodeID);
+            didStartHarvest = true;
             
-            // Start harvesting if RESTING
-            if (kamiInfo.state === "RESTING") {
-                console.log(`Starting harvest cycle ${cycles + 1}/${options.maxCycles}`);
-                await manager.startHarvesting(kamiHarvestID, nodeID);
-                
-                if (options.collectInterval > 0) {
-                    // Collect periodically during harvest
-                    const collectTimes = Math.floor(harvestDuration / options.collectInterval);
-                    for (let i = 0; i < collectTimes; i++) {
-                        await new Promise(r => setTimeout(r, options.collectInterval));
-                        try {
-                            await manager.collectHarvest(kamiSecondHarvestID);
-                        } catch (error) {
-                            console.log('Collection failed, continuing...');
-                        }
-                    }
-                    
-                    // Wait remaining time
-                    const remainingTime = harvestDuration % options.collectInterval;
-                    if (remainingTime > 0) {
-                        await new Promise(r => setTimeout(r, remainingTime));
-                    }
-                } else {
-                    // Just wait full duration
-                    await new Promise(r => setTimeout(r, harvestDuration));
-                }
-                
-                // Try to stop harvesting, handle cooldown
-                try {
-                    await manager.stopHarvesting(kamiSecondHarvestID);
-                } catch (error) {
-                    if (error instanceof Error && error.message.includes('cooldown')) {
-                        console.log('Kami on cooldown, waiting...');
-                        await new Promise(r => setTimeout(r, options.cooldownWait));
-                        // Try one more time after cooldown
-                        await manager.stopHarvesting(kamiSecondHarvestID);
-                    } else {
-                        throw error; // Re-throw if it's not a cooldown error
-                    }
-                }
-                
+            // Wait for initial cooldown after placing
+            console.log(`Waiting ${options.initialCooldown}ms for initial cooldown...`);
+            await new Promise(r => setTimeout(r, options.initialCooldown));
+            
+        } else if (initialState.state === "HARVESTING") {
+            console.log('Joining existing harvest session...');
+        } else {
+            console.log(`Cannot start strategy - kami in ${initialState.state} state`);
+            return;
+        }
+
+        // Main collection loop
+        while (cycles < options.maxCycles) {
+            console.log(`Starting collection cycle ${cycles + 1}/${options.maxCycles}`);
+            
+            try {
+                await manager.collectHarvest(harvestStateID);
+                console.log('Successfully collected rewards');
                 cycles++;
-                
-                // Wait between cycles
-                await new Promise(r => setTimeout(r, 5000));
-            } else {
-                console.log(`Kami not in RESTING state (${kamiInfo.state}), waiting...`);
-                await new Promise(r => setTimeout(r, 10000));
+            } catch (error) {
+                if (error instanceof Error) {
+                    const errorMsg = error.message.toLowerCase();
+                    if (errorMsg.includes('cooldown')) {
+                        console.log(`Collection failed - kami on cooldown, waiting ${options.cooldownWait}ms...`);
+                        await new Promise(r => setTimeout(r, options.cooldownWait));
+                        // Don't increment cycles, we'll retry this one
+                        continue;
+                    } else {
+                        console.log(`Collection attempt failed with error: ${error.message}`);
+                        // Still increment cycles to move on
+                        cycles++;
+                    }
+                }
             }
-        } catch (error: unknown) {
-            if (error instanceof Error) {
-                console.error('Strategy error:', error.message);
-            } else {
-                console.error('Unknown strategy error');
+            
+            if (cycles < options.maxCycles) {
+                console.log(`Waiting ${options.collectInterval}ms until next collection...`);
+                await new Promise(r => setTimeout(r, options.collectInterval));
             }
-            // Wait before retrying
-            await new Promise(r => setTimeout(r, 10000));
+        }
+
+        // Stop harvesting at the end
+        // console.log('Strategy complete - stopping harvest');
+        stopAttempts = 1;
+        
+        while (true) { // Keep trying until success
+            try {
+                await manager.stopHarvesting(harvestStateID);
+                console.log('Successfully stopped harvesting');
+                break;
+            } catch (error) {
+                if (error instanceof Error && error.message.toLowerCase().includes('cooldown')) {
+                    console.log(`Stop attempt ${stopAttempts} failed - kami on cooldown, waiting ${options.cooldownWait}ms...`);
+                    await new Promise(r => setTimeout(r, options.cooldownWait));
+                    stopAttempts++;
+                } else {
+                    console.error('Failed to stop harvest with unexpected error:', error instanceof Error ? error.message : 'Unknown error');
+                    throw error; // Re-throw unexpected errors
+                }
+            }
+        }
+    } catch (error: unknown) {
+        if (error instanceof Error) {
+            console.error('Strategy error:', error.message);
+        } else {
+            console.error('Unknown strategy error');
         }
     }
     
-    console.log(`Strategy completed ${cycles} cycles`);
+    const stopMsg = stopAttempts > 0 ? ` (took ${stopAttempts} attempts to stop)` : '';
+    console.log(`Strategy completed ${cycles} collection cycles${stopMsg}`);
 }
