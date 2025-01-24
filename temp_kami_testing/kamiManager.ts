@@ -102,7 +102,6 @@ export class KamiManager {
         HARVEST_START: "system.harvest.start",
         HARVEST_STOP: "system.harvest.stop",
         HARVEST_COLLECT: "system.harvest.collect",
-        HARVEST_LIQUIDATE: "system.harvest.liquidate",
         HARVEST_GETTER: "system.harvest.getter",
         ITEM_PURCHASE: "system.item.purchase",
         SCAVENGE_CLAIM: "system.scavenge.claim",
@@ -110,7 +109,7 @@ export class KamiManager {
 
     constructor(
         providerUrl: string = "https://json-rpc.preyominet.initia.tech/",
-        privateKey: string = "0xc9a0ba2fa2d828cf6af5898791bbfb8b5fcb6cdb7f9ba07d6fd1256e2fc734cb",
+        privateKey: string = "0x_your_kami_private_key_here",
         worldAddr: string = "0x89090F774BeC95420f6359003149f51fec207133"
     ) {
         this.provider = new ethers.providers.JsonRpcProvider(providerUrl);
@@ -165,7 +164,7 @@ export class KamiManager {
 
     async getCurrentRoom(kamiIndex: number): Promise<number> {
         const kamiInfo = await this.getKamiInfo(kamiIndex);
-        // get the room from the kamiInfo (hack until we can read more data
+        // get the room from the kamiInfo (hack until we can read more data on chain)
         return kamiInfo.room;
     }
 
