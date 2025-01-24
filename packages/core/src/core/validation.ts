@@ -78,3 +78,29 @@ export const starknetTransactionSchema: JSONSchemaType<StarknetTransactionPayloa
     required: ["contractAddress", "entrypoint", "calldata"],
     additionalProperties: false,
   };
+
+interface ContractCallPayload {
+  contractAddress: string;
+  abi: any[];
+  method: string;
+  args: any[];
+}
+
+export const contractCallSchema: JSONSchemaType<ContractCallPayload> = {
+  type: "object",
+  properties: {
+    contractAddress: { type: "string" },
+    abi: { 
+      type: "array",
+      items: { type: "object" }
+    },
+    method: { type: "string" },
+    args: { 
+      type: "array",
+      items: { type: "string" }
+    },
+  },
+  required: ["contractAddress", "abi", "method", "args"],
+  additionalProperties: false,
+};
+  

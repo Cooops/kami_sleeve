@@ -42,7 +42,8 @@ export type CoTActionType =
   | "GRAPHQL_FETCH"
   | "EXECUTE_TRANSACTION"
   | "READ_CONTRACT"
-  | "SYSTEM_PROMPT";
+  | "SYSTEM_PROMPT"
+  | "CONTRACT_CALL";
 
 /**
  * Data necessary for a particular action type.

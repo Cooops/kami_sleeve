@@ -1,5 +1,6 @@
 import { Account, type Call, CallData, RpcProvider } from "starknet";
 import { env } from "./env";
+import { ethers } from "ethers";
 
 interface GraphQLResponse<T> {
   data?: T;
@@ -91,3 +92,23 @@ export const executeStarknetTransaction = async (call: Call): Promise<any> => {
     return error instanceof Error ? error : new Error("Unknown error occurred");
   }
 };
+
+export async function executeContractCall(
+  contractAddress: string,
+  abi: any,
+  method: string,
+  args: any[],
+  signerOrProvider: ethers.Signer | ethers.providers.Provider,
+  isView: boolean = false
+): Promise<any> {
+  const contract = new ethers.Contract(contractAddress, abi, signerOrProvider);
+
+  if (isView) {
+    // Handle read operation
+    return await contract.callStatic[method](...args);
+  } else {
+    // Handle write operation
+    const tx = await contract[method](...args);
+    return await tx.wait();
+  }
+} 
