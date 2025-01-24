@@ -1,12 +1,13 @@
 import { ethers } from 'ethers';
-import { getKamiInfo as _getKamiInfo } from './echoKamis.js';
-import { reviveKami } from './reviveKamis.js';
-import { feedKami } from './feedKami.js'
-import { moveToRoom } from './moveKamis.js';
-import { startHarvesting } from './harvestKamis.js';
-import { stopHarvesting } from './stopHarvestKamis.js';
-import { collectHarvest } from './collectHarvest.js';
-import { liquidateHarvest } from './liquidateHarvest.js';
+import { getKamiInfo as _getKamiInfo } from './actions/echoKamis.js';
+import { reviveKami } from './actions/reviveKamis.js';
+import { feedKami } from './actions/feedKami.js'
+import { moveToRoom } from './actions/movePlayer.js';
+import { startHarvesting } from './actions/harvestKamis.js';
+import { stopHarvesting } from './actions/stopHarvestKamis.js';
+import { collectHarvest } from './actions/collectHarvest.js';
+import { purchaseItem } from './actions/purchaseItem.js';
+import { claimScavenge } from './actions/claimScavenge.js';
 
 // import from abi file cleanly soon
 const WorldABI = [
@@ -81,6 +82,13 @@ interface KamiInfo {
     state: string;
 }
 
+interface HarvestInfo {
+    startTime: number;
+    lastCollectTime: number;
+    rewards: number;
+    status: number;
+}
+
 export class KamiManager {
     private provider: ethers.providers.JsonRpcProvider;
     private signer: ethers.Wallet;
@@ -95,6 +103,9 @@ export class KamiManager {
         HARVEST_STOP: "system.harvest.stop",
         HARVEST_COLLECT: "system.harvest.collect",
         HARVEST_LIQUIDATE: "system.harvest.liquidate",
+        HARVEST_GETTER: "system.harvest.getter",
+        ITEM_PURCHASE: "system.item.purchase",
+        SCAVENGE_CLAIM: "system.scavenge.claim",
     };
 
     constructor(
@@ -173,16 +184,13 @@ export class KamiManager {
         return await collectHarvest(harvestID, this.signer, collectAddr);
     }
 
-    async liquidateHarvest(harvestID: string, kamiID: string): Promise<ethers.ContractReceipt> {
-        const liquidateAddr = await this.getSystemAddress(this.SYSTEM_IDS.HARVEST_LIQUIDATE);
-        return await liquidateHarvest(harvestID, kamiID, this.signer, liquidateAddr);
+    async purchaseItem(itemIndex: number, amount: number = 1): Promise<ethers.ContractReceipt> {
+        const purchaseAddr = await this.getSystemAddress(this.SYSTEM_IDS.ITEM_PURCHASE);
+        return await purchaseItem(itemIndex, amount, this.signer, purchaseAddr);
     }
 
-    // private parseTransactionReceipt(receipt: ethers.ContractReceipt): any {
-    //     return {
-    //         status: receipt.status === 1 ? 'Success' : 'Failed',
-    //         blockNumber: receipt.blockNumber,
-    //         gasUsed: receipt.gasUsed.toString(),
-    //     };
-    // }
+    async claimScavenge(scavBarID: string): Promise<ethers.ContractReceipt> {
+        const claimAddr = await this.getSystemAddress(this.SYSTEM_IDS.SCAVENGE_CLAIM);
+        return await claimScavenge(scavBarID, this.signer, claimAddr);
+    }
 }

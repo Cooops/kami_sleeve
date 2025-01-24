@@ -29,10 +29,10 @@ export const stopHarvesting = async (
 ): Promise<ethers.ContractReceipt> => {
     const harvestContract = new ethers.Contract(harvestAddr, HarvestStopSystemABI, signer);
     
-    // Convert hex string to BigNumber
-    const kamiBN = ethers.BigNumber.from(kamiID);
+    // Add 0x prefix if not present
+    const formattedKamiID = kamiID.startsWith('0x') ? kamiID : `0x${kamiID}`;
     
-    const tx = await harvestContract.executeTyped(kamiBN);
+    const tx = await harvestContract.executeTyped(formattedKamiID);
     console.log('tx hash', tx.hash);
     return await tx.wait();
 }; 
