@@ -102,7 +102,6 @@ export class KamiManager {
         HARVEST_START: "system.harvest.start",
         HARVEST_STOP: "system.harvest.stop",
         HARVEST_COLLECT: "system.harvest.collect",
-        HARVEST_GETTER: "system.harvest.getter",
         ITEM_PURCHASE: "system.item.purchase",
         SCAVENGE_CLAIM: "system.scavenge.claim",
     };

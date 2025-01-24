@@ -484,11 +484,14 @@ export class ChainOfThought extends EventEmitter {
             id: currentGoal.id,
             reason: blockReason,
           });
+          // Try the next goal
           continue;
         }
 
+        // Only execute one successful goal per call
         break;
       } catch (error) {
+        // Handle unexpected errors during execution
         this.logger.error(
           "executeNextGoal",
           "Unexpected error during goal execution",
@@ -499,6 +502,7 @@ export class ChainOfThought extends EventEmitter {
         );
 
         await this.handleGoalFailure(currentGoal, error);
+        // Continue with next goal instead of throwing
         continue;
       }
     }

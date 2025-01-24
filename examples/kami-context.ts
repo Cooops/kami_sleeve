@@ -309,6 +309,32 @@ Here are the main contract interactions you can use:
 1. Get Kami Info:
 
 <CONTRACT_ABIS>
+    <systems>
+        {
+            "type": "function",
+            "name": "systems",
+            "inputs": [],
+            "outputs": [
+            {
+                "name": "",
+                "type": "address",
+                "internalType": "contract IUint256Component"
+            }
+            ],
+            "stateMutability": "view"
+        }
+    </systems>
+
+    <getEntitiesWithValue>
+        {
+            "type": "function",
+            "name": "getEntitiesWithValue",
+            "inputs": [{ "name": "value", "type": "bytes", "internalType": "bytes" }],
+            "outputs": [{ "name": "", "type": "uint256[]", "internalType": "uint256[]" }],
+            "stateMutability": "view"
+        }
+    </getEntitiesWithValue>
+
     <getKamiByIndex>
         {
         "type": "function",
@@ -393,16 +419,28 @@ Here are the main contract interactions you can use:
 </best_practices>
 
 <import_query_context>
-1. Always use entity_id in queries unless specifically searching by realm_id.
-2. Use limit parameters to control result size.
-3. Include proper type casting in variables.
-4. Follow the nested structure: Models → edges → node → specific type.
-5. Only use the models listed in the AVAILABLE_MODELS section to query.
+1. Kamigotch is a fork of the MUD framework.
+2. In MUD, the system ids are used to identify the system that is being called.
+3. The system call gives you the contract address for the system.
+4. The contract address is then paired with the corresponding abi to call the function.
+5. The system ids are values and are as follows:
+    GETTER: "system.getter",
+    MOVE: "system.account.move",
+    USE_ITEM: "system.kami.use.item",
+    HARVEST_START: "system.harvest.start",
+    HARVEST_STOP: "system.harvest.stop",
+    HARVEST_COLLECT: "system.harvest.collect",
+    ITEM_PURCHASE: "system.item.purchase",
+    SCAVENGE_CLAIM: "system.scavenge.claim"
+6. When you call the systems() function on the world contract with the respective system id, you will get the registry address of the system.
+7. You can then use the registry address and the abi of the registry to call the getEntitiesWithValue function.
+8. You can also use the getEntitiesWithValue function on the system contract to get the contract address of the system.
+9. You can then use the contract address of the system and the abi of the system to call the function, like getKamiByIndex.
 </import_query_context>
 
-Remember to replace placeholders like <realm_id>, <entity_id>, <x>, <y>, and <model_name> with actual values when constructing queries.
+Remember to replace placeholders like <kami_id>, etc with actual values when constructing queries.
 
-Now, please wait for a user query about the Eternum game, and respond according to the steps outlined above.
+Now, please wait for a user query about the Kamigotchi game, and respond according to the steps outlined above.
 
 </query_guide>
 `;
@@ -414,7 +452,6 @@ export const PROVIDER_GUIDE = `
 
     Use these to call functions with RPC calls
 
-
     <IMPORTANT_RULES>
     1. If you receive an error, you may need to try again, the error message should tell you what went wrong.
     2. To verify a successful transaction, read the response you get back. You don't need to query anything.
@@ -423,48 +460,71 @@ export const PROVIDER_GUIDE = `
 
     <FUNCTIONS>
 
+    <FEED_KAMI>
+      <DESCRIPTION>
+        Feeds a specified Kami with a given item.
+      </DESCRIPTION>
+      <PARAMETERS>
+        - kamiID: ID of the Kami to be fed
+        - foodIndex: Index of the food item to use
+        - signer: Account executing the transaction
+      </PARAMETERS>
+      <EXAMPLE>
+        <JSON>
+          {
+            "contractAddress": "<use_item_system_address>",
+            "entrypoint": "executeTyped",
+            "calldata": [
+              "kamiID",
+              "foodIndex"
+            ]
+          }
+        </JSON>
+      </EXAMPLE>
+    </FEED_KAMI>
+
     <HARVEST_START>
-        <DESCRIPTION>
+      <DESCRIPTION>
         Initiates the harvesting process for a specified Kami on a given node.
-        </DESCRIPTION>
-        <PARAMETERS>
+      </DESCRIPTION>
+      <PARAMETERS>
         - kamiID: ID of the Kami starting the harvest
         - nodeID: ID of the node where harvesting will occur
         - signer: Account executing the transaction
-        </PARAMETERS>
-        <EXAMPLE>
+      </PARAMETERS>
+      <EXAMPLE>
         <JSON>
-            {
-            "contractAddress": "<eternum-harvest_systems>",
-            "entrypoint": "start_harvest",
+          {
+            "contractAddress": "<harvest_system_address>",
+            "entrypoint": "executeTyped",
             "calldata": [
-                "kamiID",
-                "nodeID"
+              "kamiID",
+              "nodeID"
             ]
-            }
+          }
         </JSON>
-        </EXAMPLE>
+      </EXAMPLE>
     </HARVEST_START>
 
     <HARVEST_STOP>
-        <DESCRIPTION>
+      <DESCRIPTION>
         Stops the harvesting process for a specified Kami.
-        </DESCRIPTION>
-        <PARAMETERS>
+      </DESCRIPTION>
+      <PARAMETERS>
         - kamiID: ID of the Kami stopping the harvest
         - signer: Account executing the transaction
-        </PARAMETERS>
-        <EXAMPLE>
+      </PARAMETERS>
+      <EXAMPLE>
         <JSON>
-            {
-            "contractAddress": "<eternum-harvest_systems>",
-            "entrypoint": "stop_harvest",
+          {
+            "contractAddress": "<harvest_system_address>",
+            "entrypoint": "executeTyped",
             "calldata": [
-                "kamiID"
+              "kamiID"
             ]
-            }
+          }
         </JSON>
-        </EXAMPLE>
+      </EXAMPLE>
     </HARVEST_STOP>
 
     </FUNCTIONS>
