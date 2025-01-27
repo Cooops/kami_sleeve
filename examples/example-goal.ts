@@ -128,9 +128,9 @@ async function main() {
   });
 
   // Uncomment to log token usage
-  // llmClient.on("trace:tokens", ({ input, output }) => {
-  //   console.log("\n💡 Tokens used:", { input, output });
-  // });
+  llmClient.on("trace:tokens", ({ input, output }) => {
+    console.log("\n💡 Tokens used:", { input, output });
+  });
 
   // Action execution events
   dreams.on("action:start", (action) => {

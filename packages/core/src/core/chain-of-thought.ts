@@ -78,7 +78,7 @@ export class ChainOfThought extends EventEmitter {
   }
 
   public async planStrategy(objective: string): Promise<void> {
-    this.logger.debug("planStrategy", "Planning strategy for objective", {
+    this.logger.info("planStrategy", "Planning strategy for objective", {
       objective,
     });
 
@@ -88,7 +88,7 @@ export class ChainOfThought extends EventEmitter {
       this.memory.findSimilarEpisodes(objective, 3),
     ]);
 
-    this.logger.debug("planStrategy", "Retrieved relevant context", {
+    this.logger.info("planStrategy", "Retrieved relevant context", {
       docCount: relevantDocs.length,
       expCount: relevantExperiences.length,
     });
@@ -246,7 +246,12 @@ export class ChainOfThought extends EventEmitter {
     reason: string;
     missing_requirements: string[];
   }> {
-    console.log("canExecuteGoal: =================================", goal);
+    console.log("\n🔍 Checking if goal can be executed:", {
+      id: goal.id,
+      description: goal.description,
+      status: goal.status,
+      dependencies: goal.dependencies
+    });
     const [relevantDocs, relevantExperiences, blackboardState] =
       await Promise.all([
         this.memory.findSimilarDocuments(goal.description, 5),
@@ -768,7 +773,16 @@ export class ChainOfThought extends EventEmitter {
    * @param action The action to be executed.
    */
   public async executeAction(action: CoTAction): Promise<string> {
-    this.logger.debug("executeAction", "Executing action", { action });
+    console.log('\n🎬 Attempting to execute action:', {
+      type: action.type,
+      payload: {
+        ...action.payload,
+        // Redact any sensitive data
+        privateKey: action.payload.privateKey ? '[REDACTED]' : undefined,
+        signer: action.payload.signer ? '[Signer Object]' : undefined
+      }
+    });
+
     this.emit("action:start", action);
 
     const actionStep = this.addStep(
@@ -795,6 +809,10 @@ export class ChainOfThought extends EventEmitter {
       }
 
       const result = await handler(action, this);
+      console.log('✅ Action executed successfully:', {
+        type: action.type,
+        result: typeof result === 'object' ? '[Result Object]' : result
+      });
 
       // Format the result for better readability
       const formattedResult =

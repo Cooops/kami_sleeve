@@ -93,22 +93,56 @@ export const executeStarknetTransaction = async (call: Call): Promise<any> => {
   }
 };
 
+export const getYominetProvider = () => {
+  return new ethers.providers.JsonRpcProvider(env.YOMINET_RPC_URL);
+};
+
+export const getYominetSigner = () => {
+  const provider = getYominetProvider();
+  if (!env.KAMIGOTCHI_PRIVATE_KEY) {
+    throw new Error('No private key configured in environment');
+  }
+  return new ethers.Wallet(env.KAMIGOTCHI_PRIVATE_KEY, provider);
+};
+
 export async function executeContractCall(
   contractAddress: string,
-  abi: any,
+  abi: ethers.ContractInterface,
   method: string,
   args: any[],
-  signerOrProvider: ethers.Signer | ethers.providers.Provider,
   isView: boolean = false
 ): Promise<any> {
-  const contract = new ethers.Contract(contractAddress, abi, signerOrProvider);
+  console.log('\n📞 Executing contract call:', {
+    contractAddress,
+    method,
+    args,
+    isView
+  });
 
-  if (isView) {
-    // Handle read operation
-    return await contract.callStatic[method](...args);
-  } else {
-    // Handle write operation
-    const tx = await contract[method](...args);
-    return await tx.wait();
+  try {
+    const signerOrProvider = isView ? getYominetProvider() : getYominetSigner();
+    const contract = new ethers.Contract(contractAddress, abi, signerOrProvider);
+    
+    if (isView) {
+      console.log('🔍 Executing view call...');
+      const result = await contract.callStatic[method](...args);
+      console.log('✅ View call successful:', result);
+      return result;
+    } else {
+      console.log('📝 Executing write transaction...');
+      const tx = await contract[method](...args);
+      console.log('⏳ Transaction submitted:', tx.hash);
+      const receipt = await tx.wait();
+      console.log('✅ Transaction confirmed:', receipt);
+      return receipt;
+    }
+  } catch (error) {
+    console.error('❌ Contract call failed:', {
+      error,
+      contractAddress,
+      method,
+      args
+    });
+    throw error;
   }
 } 

@@ -2,6 +2,7 @@ import type { CoTTransaction, LLMStructuredResponse } from "../types";
 
 import type { JSONSchemaType } from "ajv";
 import Ajv from "ajv";
+import { ethers } from 'ethers';
 
 export const queryValidator = (
   response: any
@@ -84,6 +85,7 @@ interface ContractCallPayload {
   abi: any[];
   method: string;
   args: any[];
+  isView?: boolean;
 }
 
 export const contractCallSchema: JSONSchemaType<ContractCallPayload> = {
@@ -97,10 +99,39 @@ export const contractCallSchema: JSONSchemaType<ContractCallPayload> = {
     method: { type: "string" },
     args: { 
       type: "array",
-      items: { type: "string" }
+      items: { type: "object" }
     },
+    isView: { type: "boolean", nullable: true }
   },
   required: ["contractAddress", "abi", "method", "args"],
-  additionalProperties: false,
+  additionalProperties: false
+};
+
+interface KamiTransactionPayload {
+  contractAddress: string;
+  action: 'FEED' | 'HARVEST'; // Add other actions as needed
+  args: any[];
+}
+
+export const kamiTransactionSchema: JSONSchemaType<KamiTransactionPayload> = {
+  type: "object",
+  properties: {
+    contractAddress: { type: "string" },
+    action: { 
+      type: "string",
+      enum: ['FEED', 'HARVEST'] // Add other actions as needed
+    },
+    args: {
+      type: "array",
+      items: {
+        oneOf: [
+          { type: "string" },
+          { type: "number" }
+        ]
+      }
+    }
+  },
+  required: ["contractAddress", "action", "args"],
+  additionalProperties: false
 };
   

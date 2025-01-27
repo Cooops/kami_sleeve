@@ -89,16 +89,18 @@ async function main() {
     "CONTRACT_CALL",
     contractCallAction,
     {
-      description: "Execute a contract call on any EVM chain",
+      description: "Execute a contract call to get Kami info",
       example: JSON.stringify({
-        contractAddress: "0x1234567890abcdef",
-        abi: {"test": "function"},
-        method: "test",
-        args: ["kamiId", "foodIndex"]
-      }),
+        contractAddress: "0x89090F774BeC95420f6359003149f51fec207133",
+        abi: [/* getKamiByIndex ABI */],
+        method: "getKamiByIndex",
+        args: [123],
+        isView: true
+      })
     },
     contractCallSchema as JSONSchemaType<any>
   );
+
   // Set up event logging
 
   // Thought process events
@@ -122,21 +124,25 @@ async function main() {
   dreams.on("action:start", (action) => {
     console.log("\n🎬 Starting action:", {
       type: action.type,
-      payload: action.payload,
+      payload: action.payload
     });
   });
 
+    // At the start of main()
+    
+
+  // After registering actions
   dreams.on("action:complete", ({ action, result }) => {
     console.log("\n✅ Action complete:", {
       type: action.type,
-      result,
+      result: typeof result === 'object' ? '[Result Object]' : result
     });
   });
 
   dreams.on("action:error", ({ action, error }) => {
-    console.log("\n❌ Action failed:", {
+    console.error("\n❌ Action failed:", {
       type: action.type,
-      error,
+      error
     });
   });
 
@@ -190,7 +196,9 @@ async function main() {
   dreams.on("memory:experience_stored", ({ experience }) => {
     console.log(chalk.blue("\n💾 New experience stored:"), {
       action: experience.action,
-      outcome: experience.outcome,
+      outcome: typeof experience.outcome === 'object' 
+        ? '[Result Object]' 
+        : experience.outcome,
       importance: experience.importance,
       timestamp: experience.timestamp,
     });
@@ -236,6 +244,10 @@ async function main() {
       console.log(`   Content: ${doc.content}`);
     });
   });
+
+  // At the start of main(), after registering actions
+//   const registeredActions = Array.from(dreams.actionHandlers.keys());
+//   console.log("\n🔧 Registered actions:", registeredActions);
 
   // Main interaction loop
   while (true) {

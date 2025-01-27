@@ -14,6 +14,8 @@ const envSchema = z.object({
   DRY_RUN: z
     .preprocess((val) => val === "1" || val === "true", z.boolean())
     .default(true),
+  YOMINET_RPC_URL: z.string().default("https://json-rpc.preyominet.initia.tech"),
+  KAMIGOTCHI_PRIVATE_KEY: z.string().optional(),
 });
 
 export const env = envSchema.parse(process.env);
